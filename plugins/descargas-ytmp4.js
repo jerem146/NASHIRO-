@@ -9,7 +9,7 @@ const handler = async (m, { conn, text, command }) => {
       return conn.reply(m.chat, `❀ Por favor, ingresa el nombre o enlace del video a descargar.`, m)
     }
 
-    // 🔎 Buscar el video en YouTube
+    // Buscar el video
     let videoIdToFind = text.match(youtubeRegexID) || null
     let ytplay2 = await yts(videoIdToFind === null ? text : 'https://youtu.be/' + videoIdToFind[1])
 
@@ -30,41 +30,26 @@ const handler = async (m, { conn, text, command }) => {
     const infoMessage = `「✦」Descargando *<${title || 'Desconocido'}>*\n\n> ✧ Canal » *${canal}*\n> ✰ Vistas » *${vistas}*\n> ⴵ Duración » *${timestamp || 'Desconocido'}*\n> ✐ Publicado » *${ago || 'Desconocido'}*\n> 🜸 Link » ${url}`
     await conn.reply(m.chat, infoMessage, m)
 
-    // 🎬 Descargar MP4 con NexFuture
+    // 🎬 Descargar MP4 con la API Nexfuture
     try {
-      const api = await (await fetch(`https://api.nexfuture.com.br/api/downloads/youtube/playvideo/v2?query=${ytplay2.videoId}`)).json()
-      
-      console.log("📥 Respuesta API NexFuture:", api) // 👀 Mira en consola para ver la estructura completa
-      
-      let videoUrl = null
+      const api = await (await fetch(`https://api.nexfuture.com.br/api/downloads/youtube/playvideo/v2?query=${encodeURIComponent(url)}`)).json()
+      const result = api?.resultado?.resultado?.video?.url
+      const titulo = api?.resultado?.resultado?.video?.título || title || "Desconocido"
 
-      // Intentar encontrar el link en distintos campos posibles
-      if (api?.resultado?.video?.url) videoUrl = api.resultado.video.url
-      else if (api?.resultado?.url) videoUrl = api.resultado.url
-      else if (api?.resultado?.link) videoUrl = api.resultado.link
-      else if (Array.isArray(api?.resultado?.video)) videoUrl = api.resultado.video[0]?.url
-      else if (api?.resultado?.links?.["720p"]) videoUrl = api.resultado.links["720p"]
-
-      const titulo = api?.resultado?.titulo || title || "Desconocido"
-
-      if (!videoUrl) {
-        return conn.reply(m.chat, "⚠ No encontré un enlace válido en la API. Mira la consola para ver el JSON devuelto.", m)
-      }
+      if (!result) throw new Error('⚠ El enlace de video no se generó correctamente.')
 
       await conn.sendFile(
         m.chat,
-        videoUrl,
+        result,
         `${titulo}.mp4`,
         titulo,
         m
       )
     } catch (e) {
-      console.error("❌ Error en descarga:", e)
       return conn.reply(m.chat, '⚠︎ No se pudo enviar el video. Puede ser demasiado pesado o la URL no se generó.', m)
     }
 
   } catch (error) {
-    console.error("⚠ Error general:", error)
     return m.reply(`⚠︎ Ocurrió un error: ${error}`)
   }
 }
