@@ -30,26 +30,29 @@ const handler = async (m, { conn, text, command }) => {
     const infoMessage = `「✦」Descargando *<${title || 'Desconocido'}>*\n\n> ✧ Canal » *${canal}*\n> ✰ Vistas » *${vistas}*\n> ⴵ Duración » *${timestamp || 'Desconocido'}*\n> ✐ Publicado » *${ago || 'Desconocido'}*\n> 🜸 Link » ${url}`
     await conn.reply(m.chat, infoMessage, m)
 
-    // 🎬 Descargar MP4 con Nexfuture
+    // 🎬 Descargar MP4 con NexFuture API
     try {
-      const api = await (await fetch(`https://api.nexfuture.com.br/playvideo?id=${ytplay2.videoId}`)).json()
-      const result = api.resultado?.video
-      const titulo = api.resultado?.titulo || title || "Desconocido"
+      const api = await (await fetch(`https://api.nexfuture.com.br/api/downloads/youtube/playvideo/v2?query=${ytplay2.videoId}`)).json()
+      
+      const videoUrl = api?.resultado?.video?.url || api?.resultado?.url
+      const titulo = api?.resultado?.video?.título || api?.resultado?.titulo || title || "Desconocido"
 
-      if (!result) throw new Error('⚠ El enlace de video no se generó correctamente.')
+      if (!videoUrl) throw new Error('⚠ El enlace de video no se generó correctamente.')
 
       await conn.sendFile(
         m.chat,
-        result,
+        videoUrl,
         `${titulo}.mp4`,
         titulo,
         m
       )
     } catch (e) {
+      console.error("Error al obtener el video:", e)
       return conn.reply(m.chat, '⚠︎ No se pudo enviar el video. Puede ser demasiado pesado o la URL no se generó.', m)
     }
 
   } catch (error) {
+    console.error("Error general:", error)
     return m.reply(`⚠︎ Ocurrió un error: ${error}`)
   }
 }
