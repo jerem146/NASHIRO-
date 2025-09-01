@@ -1,4 +1,4 @@
-import fetch from "node-fetch"
+/*import fetch from "node-fetch"
 import yts from 'yt-search'
 import axios from "axios"
 
@@ -119,4 +119,4 @@ function formatViews(views) {
     return `${(views / 1_000).toFixed(1)}k (${views.toLocaleString()})`
   }
   return views.toString()
-}
+}*/
