@@ -9,7 +9,7 @@ const handler = async (m, { conn, text, command }) => {
       return conn.reply(m.chat, `❀ Por favor, ingresa el nombre o enlace del video a descargar.`, m)
     }
 
-    // Buscar el video en YouTube
+    // 🔎 Buscar en YouTube
     let videoIdToFind = text.match(youtubeRegexID) || null
     let ytplay2 = await yts(videoIdToFind === null ? text : 'https://youtu.be/' + videoIdToFind[1])
 
@@ -30,14 +30,17 @@ const handler = async (m, { conn, text, command }) => {
     const infoMessage = `「✦」Descargando *<${title || 'Desconocido'}>*\n\n> ✧ Canal » *${canal}*\n> ✰ Vistas » *${vistas}*\n> ⴵ Duración » *${timestamp || 'Desconocido'}*\n> ✐ Publicado » *${ago || 'Desconocido'}*\n> 🜸 Link » ${url}`
     await conn.reply(m.chat, infoMessage, m)
 
-    // 🎬 Descargar MP4 con NexFuture API
+    // 🎬 Descargar MP4 con NexFuture
     try {
       const api = await (await fetch(`https://api.nexfuture.com.br/api/downloads/youtube/playvideo/v2?query=${ytplay2.videoId}`)).json()
       
-      const videoUrl = api?.resultado?.video?.url || api?.resultado?.url
-      const titulo = api?.resultado?.video?.título || api?.resultado?.titulo || title || "Desconocido"
+      // 👀 Buscar enlace de descarga
+      const result = api?.resultado?.video || api?.resultado
+      const videoUrl = result?.url || result?.download_url || result?.link
 
-      if (!videoUrl) throw new Error('⚠ El enlace de video no se generó correctamente.')
+      const titulo = result?.título || api?.resultado?.titulo || title || "Desconocido"
+
+      if (!videoUrl) throw new Error('⚠ No se encontró el enlace de descarga en la respuesta de la API.')
 
       await conn.sendFile(
         m.chat,
@@ -47,7 +50,7 @@ const handler = async (m, { conn, text, command }) => {
         m
       )
     } catch (e) {
-      console.error("Error al obtener el video:", e)
+      console.error("Error en descarga:", e)
       return conn.reply(m.chat, '⚠︎ No se pudo enviar el video. Puede ser demasiado pesado o la URL no se generó.', m)
     }
 
