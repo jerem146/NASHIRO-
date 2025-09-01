@@ -9,7 +9,7 @@ const handler = async (m, { conn, text, command }) => {
       return conn.reply(m.chat, `❀ Por favor, ingresa el nombre o enlace del video a descargar.`, m)
     }
 
-    // 🔎 Buscar en YouTube
+    // 🔎 Buscar el video en YouTube
     let videoIdToFind = text.match(youtubeRegexID) || null
     let ytplay2 = await yts(videoIdToFind === null ? text : 'https://youtu.be/' + videoIdToFind[1])
 
@@ -34,13 +34,22 @@ const handler = async (m, { conn, text, command }) => {
     try {
       const api = await (await fetch(`https://api.nexfuture.com.br/api/downloads/youtube/playvideo/v2?query=${ytplay2.videoId}`)).json()
       
-      // 👀 Buscar enlace de descarga
-      const result = api?.resultado?.video || api?.resultado
-      const videoUrl = result?.url || result?.download_url || result?.link
+      console.log("📥 Respuesta API NexFuture:", api) // 👀 Mira en consola para ver la estructura completa
+      
+      let videoUrl = null
 
-      const titulo = result?.título || api?.resultado?.titulo || title || "Desconocido"
+      // Intentar encontrar el link en distintos campos posibles
+      if (api?.resultado?.video?.url) videoUrl = api.resultado.video.url
+      else if (api?.resultado?.url) videoUrl = api.resultado.url
+      else if (api?.resultado?.link) videoUrl = api.resultado.link
+      else if (Array.isArray(api?.resultado?.video)) videoUrl = api.resultado.video[0]?.url
+      else if (api?.resultado?.links?.["720p"]) videoUrl = api.resultado.links["720p"]
 
-      if (!videoUrl) throw new Error('⚠ No se encontró el enlace de descarga en la respuesta de la API.')
+      const titulo = api?.resultado?.titulo || title || "Desconocido"
+
+      if (!videoUrl) {
+        return conn.reply(m.chat, "⚠ No encontré un enlace válido en la API. Mira la consola para ver el JSON devuelto.", m)
+      }
 
       await conn.sendFile(
         m.chat,
@@ -50,12 +59,12 @@ const handler = async (m, { conn, text, command }) => {
         m
       )
     } catch (e) {
-      console.error("Error en descarga:", e)
+      console.error("❌ Error en descarga:", e)
       return conn.reply(m.chat, '⚠︎ No se pudo enviar el video. Puede ser demasiado pesado o la URL no se generó.', m)
     }
 
   } catch (error) {
-    console.error("Error general:", error)
+    console.error("⚠ Error general:", error)
     return m.reply(`⚠︎ Ocurrió un error: ${error}`)
   }
 }
